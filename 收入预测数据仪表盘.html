@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>收入预测数据仪表盘</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .header .meta {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+            opacity: 0.95;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* KPI Section */
+        .kpi-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .kpi-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            border-left: 4px solid #667eea;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        
+        .kpi-card.border-success { border-left-color: #28a745; }
+        .kpi-card.border-warning { border-left-color: #ffc107; }
+        .kpi-card.border-danger { border-left-color: #dc3545; }
+        .kpi-card.border-info { border-left-color: #17a2b8; }
+        
+        .kpi-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .kpi-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .kpi-change {
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .kpi-change.positive { color: #28a745; }
+        .kpi-change.negative { color: #dc3545; }
+        .kpi-change.neutral { color: #6c757d; }
+        
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .chart-container {
+            height: 350px;
+            width: 100%;
+        }
+        
+        /* Data Table Section */
+        .table-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .table-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table thead {
+            background: #f8f9fa;
+        }
+        
+        .data-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 14px;
+        }
+        
+        .data-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        
+        /* Alert Section */
+        .alert-section {
+            margin-bottom: 25px;
+        }
+        
+        .alert {
+            padding: 18px 24px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        
+        .alert-icon {
+            font-size: 24px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .kpi-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header .meta {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 收入预测数据仪表盘</h1>
+            <div class="meta">
+                <div class="meta-item">
+                    <span>📅</span>
+                    <span>报告周期：2026年3月</span>
+                </div>
+                <div class="meta-item">
+                    <span>🕐</span>
+                    <span>生成时间：2026-05-07 08:55:00</span>
+                </div>
+                <div class="meta-item">
+                    <span>📊</span>
+                    <span>数据更新：实时</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- KPI Cards -->
+        <div class="kpi-section">
+            <div class="kpi-card border-info">
+                <div class="kpi-label">
+                    <span>👥</span>
+                    <span>总预测客户数</span>
+                </div>
+                <div class="kpi-value">12,543</div>
+                <div class="kpi-change positive">
+                    <span>↑</span>
+                    <span>8.5% 较上月</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card border-success">
+                <div class="kpi-label">
+                    <span>💰</span>
+                    <span>总预测回款（万元）</span>
+                </div>
+                <div class="kpi-value">2,847</div>
+                <div class="kpi-change positive">
+                    <span>↑</span>
+                    <span>12.3% 较上月</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card border-warning">
+                <div class="kpi-label">
+                    <span>📈</span>
+                    <span>平均偏差率</span>
+                </div>
+                <div class="kpi-value">5.2%</div>
+                <div class="kpi-change neutral">
+                    <span>→</span>
+                    <span>正常范围</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card border-danger">
+                <div class="kpi-label">
+                    <span>⚠️</span>
+                    <span>超阈值档位数</span>
+                </div>
+                <div class="kpi-value">2</div>
+                <div class="kpi-change negative">
+                    <span>!</span>
+                    <span>需要关注</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alert Section -->
+        <div class="alert-section">
+            <div class="alert danger">
+                <span class="alert-icon">🚨</span>
+                <div>
+                    <strong>紧急预警：</strong>框架档位偏差率 16.8%，超过促销月阈值 15%，建议立即调整销售策略！
+                </div>
+            </div>
+            <div class="alert warning">
+                <span class="alert-icon">⚠️</span>
+                <div>
+                    <strong>偏差预警：</strong>个人超值档位偏差率 12.3%，超过常规月阈值 10%，需关注线索质量。
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">📈 各档位预测客户数对比</div>
+                </div>
+                <div id="chart1" class="chart-container"></div>
+            </div>
+            
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">💰 各档位预测回款对比（万元）</div>
+                </div>
+                <div id="chart2" class="chart-container"></div>
+            </div>
+            
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">📊 偏差率分析</div>
+                </div>
+                <div id="chart3" class="chart-container"></div>
+            </div>
+            
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">📅 近6个月客户数趋势</div>
+                </div>
+                <div id="chart4" class="chart-container"></div>
+            </div>
+        </div>
+        
+        <!-- Data Table Section -->
+        <div class="table-section">
+            <div class="table-header">
+                <div class="table-title">📋 各档位详细预测数据</div>
+                <button class="btn btn-primary" onclick="exportData()">📥 导出数据</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>档位</th>
+                        <th>类型</th>
+                        <th>预测客户数</th>
+                        <th>预测回款(万)</th>
+                        <th>预测计收(万)</th>
+                        <th>偏差率</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>免费</strong></td>
+                        <td><span class="badge badge-info">常规月</span></td>
+                        <td>5,234</td>
+                        <td>0.0</td>
+                        <td>0.0</td>
+                        <td>2.1%</td>
+                        <td><span class="badge badge-success">正常</span></td>
+                        <td><a href="#" style="color: #667eea;">详情</a></td>
+                    </tr>
+                    <tr>
+                        <td><strong>个人超值</strong></td>
+                        <td><span class="badge badge-warning">促销月</span></td>
+                        <td>3,456</td>
+                        <td>172.8</td>
+                        <td>165.2</td>
+                        <td style="color: #ff7675; font-weight: bold;">12.3%</td>
+                        <td><span class="badge badge-danger">超阈值</span></td>
+                        <td><a href="#" style="color: #667eea;">详情</a></td>
+                    </tr>
+                    <tr>
+                        <td><strong>套餐</strong></td>
+                        <td><span class="badge badge-info">常规月</span></td>
+                        <td>2,145</td>
+                        <td>858.0</td>
+                        <td>820.8</td>
+                        <td>3.5%</td>
+                        <td><span class="badge badge-success">正常</span></td>
+                        <td><a href="#" style="color: #667eea;">详情</a></td>
+                    </tr>
+                    <tr>
+                        <td><strong>定制</strong></td>
+                        <td><span class="badge badge-info">常规月</span></td>
+                        <td>856</td>
+                        <td>1,026.0</td>
+                        <td>981.6</td>
+                        <td>1.8%</td>
+                        <td><span class="badge badge-success">正常</span></td>
+                        <td><a href="#" style="color: #667eea;">详情</a></td>
+                    </tr>
+                    <tr>
+                        <td><strong>框架</strong></td>
+                        <td><span class="badge badge-warning">促销月</span></td>
+                        <td>234</td>
+                        <td>790.2</td>
+                        <td>756.0</td>
+                        <td style="color: #ff7675; font-weight: bold;">16.8%</td>
+                        <td><span class="badge badge-danger">超阈值</span></td>
+                        <td><a href="#" style="color: #667eea;">详情</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // Chart 1: 各档位预测客户数对比
+        var chart1 = echarts.init(document.getElementById('chart1'));
+        var option1 = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' }
+            },
+            xAxis: {
+                type: 'category',
+                data: ['免费', '个人超值', '套餐', '定制', '框架']
+            },
+            yAxis: {
+                type: 'value',
+                name: '客户数'
+            },
+            series: [{
+                data: [5234, 3456, 2145, 856, 234],
+                type: 'bar',
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#667eea' },
+                        { offset: 1, color: '#764ba2' }
+                    ])
+                },
+                label: {
+                    show: true,
+                    position: 'top'
+                }
+            }]
+        };
+        chart1.setOption(option1);
+        
+        // Chart 2: 各档位预测回款对比
+        var chart2 = echarts.init(document.getElementById('chart2'));
+        var option2 = {
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b}: {c}万 ({d}%)'
+            },
+            legend: {
+                orient: 'vertical',
+                left: 'left'
+            },
+            series: [{
+                name: '回款',
+                type: 'pie',
+                radius: '50%',
+                data: [
+                    { value: 0, name: '免费' },
+                    { value: 172.8, name: '个人超值' },
+                    { value: 858.0, name: '套餐' },
+                    { value: 1026.0, name: '定制' },
+                    { value: 790.2, name: '框架' }
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }]
+        };
+        chart2.setOption(option2);
+        
+        // Chart 3: 偏差率分析
+        var chart3 = echarts.init(document.getElementById('chart3'));
+        var option3 = {
+            tooltip: {
+                formatter: function(params) {
+                    var threshold = params.data.threshold;
+                    var status = params.data.deviation > threshold ? '超阈值' : '正常';
+                    return params.name + '<br/>偏差率: ' + params.data.deviation + '%<br/>阈值: ' + threshold + '%<br/>状态: ' + status;
+                }
+            },
+            xAxis: {
+                type: 'category',
+                data: ['免费', '个人超值', '套餐', '定制', '框架']
+            },
+            yAxis: {
+                type: 'value',
+                name: '偏差率(%)'
+            },
+            series: [{
+                name: '偏差率',
+                type: 'bar',
+                data: [
+                    { value: 2.1, deviation: 2.1, threshold: 10 },
+                    { value: 12.3, deviation: 12.3, threshold: 10 },
+                    { value: 3.5, deviation: 3.5, threshold: 10 },
+                    { value: 1.8, deviation: 1.8, threshold: 10 },
+                    { value: 16.8, deviation: 16.8, threshold: 15 }
+                ],
+                itemStyle: {
+                    color: function(params) {
+                        var deviation = params.data.deviation;
+                        var threshold = params.data.threshold;
+                        return deviation > threshold ? '#dc3545' : '#28a745';
+                    }
+                },
+                markLine: {
+                    data: [
+                        { name: '常规阈值', yAxis: 10, lineStyle: { color: '#ffc107' } },
+                        { name: '促销阈值', yAxis: 15, lineStyle: { color: '#dc3545' } }
+                    ]
+                }
+            }]
+        };
+        chart3.setOption(option3);
+        
+        // Chart 4: 近6个月客户数趋势
+        var chart4 = echarts.init(document.getElementById('chart4'));
+        var option4 = {
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: ['免费', '个人超值', '套餐', '定制', '框架']
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: ['2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03']
+            },
+            yAxis: {
+                type: 'value',
+                name: '客户数'
+            },
+            series: [
+                {
+                    name: '免费',
+                    type: 'line',
+                    data: [4800, 4920, 5010, 5100, 5200, 5234],
+                    smooth: true
+                },
+                {
+                    name: '个人超值',
+                    type: 'line',
+                    data: [3100, 3200, 3300, 3380, 3420, 3456],
+                    smooth: true
+                },
+                {
+                    name: '套餐',
+                    type: 'line',
+                    data: [2000, 2050, 2080, 2100, 2120, 2145],
+                    smooth: true
+                },
+                {
+                    name: '定制',
+                    type: 'line',
+                    data: [820, 830, 840, 845, 850, 856],
+                    smooth: true
+                },
+                {
+                    name: '框架',
+                    type: 'line',
+                    data: [220, 222, 225, 228, 230, 234],
+                    smooth: true
+                }
+            ]
+        };
+        chart4.setOption(option4);
+        
+        // 窗口大小变化时重绘图表
+        window.addEventListener('resize', function() {
+            chart1.resize();
+            chart2.resize();
+            chart3.resize();
+            chart4.resize();
+        });
+        
+        // 导出数据
+        function exportData() {
+            alert('📥 数据导出功能（可集成后端API）');
+        }
+    </script>
+</body>
+</html>
